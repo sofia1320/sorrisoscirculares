@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'user_home_page.dart';
-import 'admin_home_page.dart';
+//import 'admin_home_page.dart';
+import 'institution_verification_page.dart';
 import 'services/api_service.dart';
 void main() {
   runApp(const MyApp());
@@ -433,33 +434,23 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
     super.dispose();
   }
 
+  // método _register() a adicionar ao State<RegisterUserPage>
   Future<void> _register() async {
     setState(() => _isLoading = true);
-    try {
-      final success = await ApiService.registerUser(
-        nome: _nomeController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-        telemovel: _telemovelController.text.trim(),
-      );
-      if (success) {
-        if (!mounted) return;
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const UserHomePage()),
-        );
-      } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erro ao registar. Tente novamente.')),
-        );
-      }
-    } catch (e) {
+    final success = await ApiService.registerUser(
+      nome: _nomeController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+      telemovel: _telemovelController.text.trim(),
+    );
+    setState(() => _isLoading = false);
+
+    if (success) {
+      // já está logged in -> navegar para UserHomePage
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const UserHomePage()));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erro ao registar. Tente novamente.')));
     }
   }
 
@@ -532,9 +523,32 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
                         ),
                       ),
                       const SizedBox(height: 32),
-                      _RegisterButton(
-                        text: _isLoading ? 'A REGISTAR...' : 'REGISTAR',
-                        onTap: _isLoading ? null : () { _register(); },
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _register,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF07167),
+                          minimumSize: const Size(300, 56),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(40),
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 3,
+                                ),
+                              )
+                            : const Text(
+                                'Registar',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                       const SizedBox(height: 32),
                     ],
@@ -623,8 +637,49 @@ class _RegisterButton extends StatelessWidget {
   }
 }
 
-class RegisterInstitutionPage extends StatelessWidget {
+
+class RegisterInstitutionPage extends StatefulWidget {
   const RegisterInstitutionPage({super.key});
+
+  @override
+  State<RegisterInstitutionPage> createState() => _RegisterInstitutionPageState();
+}
+
+class _RegisterInstitutionPageState extends State<RegisterInstitutionPage> {
+
+    // método _registerAdmin() a adicionar ao State<RegisterInstitutionPage>
+    Future<void> _registerAdmin() async {
+      setState(() => _isLoading = true);
+      final created = await ApiService.registerAdmin(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        endereco: _enderecoController.text.trim(),
+      );
+      setState(() => _isLoading = false);
+
+      if (created) {
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => InstitutionVerificationPage(
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(), // guardar temporariamente para auto-login
+          ),
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erro ao registar instituição.')));
+      }
+    }
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _enderecoController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _enderecoController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -694,18 +749,60 @@ class RegisterInstitutionPage extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 32.0),
                         child: Column(
                           children: [
-                            _InstitutionField(hint: 'Email'),
+                            TextField(
+                              controller: _emailController,
+                              decoration: const InputDecoration(
+                                hintText: 'Email',
+                                filled: true,
+                                fillColor: Color(0xFFFFFFF4),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(Radius.circular(32)),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              style: const TextStyle(fontSize: 18, fontFamily: 'SF Pro Display'),
+                            ),
                             const SizedBox(height: 24),
-                            _InstitutionField(hint: 'Password', obscure: true),
+                            TextField(
+                              controller: _passwordController,
+                              obscureText: true,
+                              decoration: const InputDecoration(
+                                hintText: 'Password',
+                                filled: true,
+                                fillColor: Color(0xFFFFFFF4),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(Radius.circular(32)),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              style: const TextStyle(fontSize: 18, fontFamily: 'SF Pro Display'),
+                            ),
+                            const SizedBox(height: 24),
+                            TextField(
+                              controller: _enderecoController,
+                              decoration: const InputDecoration(
+                                hintText: 'Endereço',
+                                filled: true,
+                                fillColor: Color(0xFFFFFFF4),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(Radius.circular(32)),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              style: const TextStyle(fontSize: 18, fontFamily: 'SF Pro Display'),
+                            ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 32),
-                      _InstitutionButton(
-                        text: 'CONTINUAR',
-                        onTap: () {
-                          // ação de continuar
-                        },
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _registerAdmin,
+                        child: _isLoading
+                            ? const CircularProgressIndicator()
+                            : const Text('Registar Instituição'),
                       ),
                       const SizedBox(height: 32),
                     ],
@@ -755,15 +852,7 @@ class _InstitutionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        if (text == 'CONTINUAR') {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const InstitutionVerificationPage()),
-          );
-        } else {
-          onTap();
-        }
-      },
+      onTap: onTap, // apenas executa o callback passado — o pai (RegisterInstitutionPage) lida com navegações
       child: Container(
         width: 300,
         padding: const EdgeInsets.symmetric(vertical: 18),
@@ -800,140 +889,3 @@ class _InstitutionButton extends StatelessWidget {
   }
 }
 
-class InstitutionVerificationPage extends StatefulWidget {
-  const InstitutionVerificationPage({super.key});
-
-  @override
-  State<InstitutionVerificationPage> createState() => _InstitutionVerificationPageState();
-}
-
-class _InstitutionVerificationPageState extends State<InstitutionVerificationPage> {
-  final List<TextEditingController> _controllers = List.generate(6, (_) => TextEditingController());
-
-  @override
-  void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  Widget _buildCodeBox(int index) {
-    return SizedBox(
-      width: 48,
-      child: TextField(
-        controller: _controllers[index],
-        textAlign: TextAlign.center,
-        maxLength: 1,
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(
-          counterText: '',
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFF07167), width: 2),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFF07167), width: 2),
-          ),
-        ),
-        style: const TextStyle(
-          fontSize: 28,
-          color: Color(0xFFF07167),
-          fontFamily: 'SF Pro Display',
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF07167),
-              Color(0xFFF38A7A),
-            ],
-          ),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 60),
-            Center(
-              child: Image.asset(
-                'assets/images/logo branco.png',
-                fit: BoxFit.contain,
-                width: 260,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(top: 0),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFFFF4),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(48),
-                    topRight: Radius.circular(48),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 32),
-                    const Text(
-                      'Etapa de verificação',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                        fontFamily: 'SF Pro Display',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Enviamos um código de verificação para o seu email.\nPor favor, insira o seu código.',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                        fontFamily: 'SF Pro Display',
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(6, (i) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                        child: _buildCodeBox(i),
-                      )),
-                    ),
-                    const SizedBox(height: 32),
-                    _InstitutionButton(
-                      text: 'VERIFICAR',
-                      onTap: () {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => const AdminHomePage()),
-                          (route) => false,
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

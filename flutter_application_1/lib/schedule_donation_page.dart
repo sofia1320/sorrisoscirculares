@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'donation_history_page.dart';
+//import 'donation_history_page.dart';
+
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'services/api_service.dart';
 
 
 class ScheduleDonationPage extends StatefulWidget {
@@ -11,6 +15,38 @@ class ScheduleDonationPage extends StatefulWidget {
 }
 
 class _ScheduleDonationPageState extends State<ScheduleDonationPage> {
+    // dentro do State<ScheduleDonationPage>
+    Future<void> _submitDonation(String childId, String date, String time) async {
+      try {
+        final token = await ApiService.getToken();
+        final url = Uri.parse('${ApiService.baseUrl}/donations');
+        final res = await http.post(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
+          body: json.encode({
+            'childId': childId,
+            'date': date, // "YYYY-MM-DD"
+            'time': time, // "HH:mm"
+          }),
+        );
+
+        if (res.statusCode == 201) {
+          // sucesso: parse response e notificar UI
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Doação agendada com sucesso.')));
+          // opcional: navegar ou atualizar estado
+        } else {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: ${res.statusCode} ${res.body}')));
+        }
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+      }
+    }
   DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   int? _selectedDay;
   TimeOfDay? selectedTime;
@@ -122,24 +158,12 @@ class _ScheduleDonationPageState extends State<ScheduleDonationPage> {
                         },
                       );
                       if (confirmed == true) {
-                        // Exemplo: criar uma doação e navegar para a página de histórico
-                        final newDonation = Donation(
-                          childName: widget.childName,
-                          dateTime: DateTime(
-                            _focusedMonth.year,
-                            _focusedMonth.month,
-                            _selectedDay ?? 1,
-                            selectedTime?.hour ?? 0,
-                            selectedTime?.minute ?? 0,
-                          ),
-                          status: DonationStatus.pendente,
-                        );
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (_) => DonationHistoryPage(donations: [newDonation]),
-                          ),
-                          (route) => false,
-                        );
+                        // Chamar _submitDonation após confirmação
+                        // Substitua 'childId' pelo ID real da criança se disponível
+                        final String childId = 'childId'; // TODO: obter o ID real
+                        final String date = '${_focusedMonth.year.toString().padLeft(4, '0')}-${_focusedMonth.month.toString().padLeft(2, '0')}-${(_selectedDay ?? 1).toString().padLeft(2, '0')}';
+                        final String time = selectedTime != null ? selectedTime!.format(context) : '00:00';
+                        await _submitDonation(childId, date, time);
                       }
                     }
                   : null,
