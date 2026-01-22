@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'user_home_page.dart';
 import 'admin_home_page.dart';
 import 'services/api_service.dart';
+import 'institution_verification_page.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -623,8 +624,67 @@ class _RegisterButton extends StatelessWidget {
   }
 }
 
-class RegisterInstitutionPage extends StatelessWidget {
+class RegisterInstitutionPage extends StatefulWidget {
   const RegisterInstitutionPage({super.key});
+
+  @override
+  State<RegisterInstitutionPage> createState() => _RegisterInstitutionPageState();
+}
+
+class _RegisterInstitutionPageState extends State<RegisterInstitutionPage> {
+  final _nomeController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _moradaController = TextEditingController();
+  final _nifController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _moradaController.dispose();
+    _nifController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _registerAdmin() async {
+    setState(() => _isLoading = true);
+    try {
+      final success = await ApiService.registerAdmin(
+        nome: _nomeController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        morada: _moradaController.text.trim(),
+        nif: _nifController.text.trim(),
+      );
+      if (success) {
+        if (!mounted) return;
+        // Navigate to verification page with email and password
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => InstitutionVerificationPage(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+            ),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erro ao registar instituição. Tente novamente.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -671,7 +731,7 @@ class RegisterInstitutionPage extends StatelessWidget {
                     children: [
                       const SizedBox(height: 32),
                       const Text(
-                        'Bem-vindo!',
+                        'Registar Instituição',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -681,7 +741,7 @@ class RegisterInstitutionPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Insere as credenciais que te enviamos.',
+                        'Preencha os dados da instituição.',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.grey,
@@ -694,18 +754,22 @@ class RegisterInstitutionPage extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 32.0),
                         child: Column(
                           children: [
-                            _InstitutionField(hint: 'Email'),
+                            _InstitutionField(hint: 'Nome', controller: _nomeController),
                             const SizedBox(height: 24),
-                            _InstitutionField(hint: 'Password', obscure: true),
+                            _InstitutionField(hint: 'Email', controller: _emailController),
+                            const SizedBox(height: 24),
+                            _InstitutionField(hint: 'Password', obscure: true, controller: _passwordController),
+                            const SizedBox(height: 24),
+                            _InstitutionField(hint: 'Morada', controller: _moradaController),
+                            const SizedBox(height: 24),
+                            _InstitutionField(hint: 'NIF', controller: _nifController),
                           ],
                         ),
                       ),
                       const SizedBox(height: 32),
                       _InstitutionButton(
-                        text: 'CONTINUAR',
-                        onTap: () {
-                          // ação de continuar
-                        },
+                        text: _isLoading ? 'A REGISTAR...' : 'REGISTAR',
+                        onTap: _isLoading ? () {} : _registerAdmin,
                       ),
                       const SizedBox(height: 32),
                     ],
@@ -723,158 +787,19 @@ class RegisterInstitutionPage extends StatelessWidget {
 class _InstitutionField extends StatelessWidget {
   final String hint;
   final bool obscure;
-  const _InstitutionField({required this.hint, this.obscure = false});
+  final TextEditingController? controller;
+  const _InstitutionField({required this.hint, this.obscure = false, this.controller});
 
   @override
   Widget build(BuildContext context) {
     return TextField(
+      controller: controller,
       obscureText: obscure,
       decoration: InputDecoration(
         hintText: hint,
         filled: true,
         fillColor: const Color(0xFFFFFFF4),
         contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(32),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      style: const TextStyle(
-        fontSize: 18,
-        fontFamily: 'SF Pro Display',
-      ),
-    );
-  }
-}
-
-class _InstitutionButton extends StatelessWidget {
-  final String text;
-  final VoidCallback onTap;
-  const _InstitutionButton({required this.text, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        if (text == 'CONTINUAR') {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const InstitutionVerificationPage()),
-          );
-        } else {
-          onTap();
-        }
-      },
-      child: Container(
-        width: 300,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        margin: const EdgeInsets.only(top: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(40),
-          gradient: const LinearGradient(
-            colors: [Color(0xFFF07167), Color(0xFFF3B9A9)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              offset: const Offset(0, 6),
-              blurRadius: 10,
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontFamily: 'WildlySans',
-              fontSize: 22,
-              color: Colors.white,
-              letterSpacing: 2,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class InstitutionVerificationPage extends StatefulWidget {
-  const InstitutionVerificationPage({super.key});
-
-  @override
-  State<InstitutionVerificationPage> createState() => _InstitutionVerificationPageState();
-}
-
-class _InstitutionVerificationPageState extends State<InstitutionVerificationPage> {
-  final List<TextEditingController> _controllers = List.generate(6, (_) => TextEditingController());
-
-  @override
-  void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  Widget _buildCodeBox(int index) {
-    return SizedBox(
-      width: 48,
-      child: TextField(
-        controller: _controllers[index],
-        textAlign: TextAlign.center,
-        maxLength: 1,
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(
-          counterText: '',
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFF07167), width: 2),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFF07167), width: 2),
-          ),
-        ),
-        style: const TextStyle(
-          fontSize: 28,
-          color: Color(0xFFF07167),
-          fontFamily: 'SF Pro Display',
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF07167),
-              Color(0xFFF38A7A),
-            ],
-          ),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 60),
-            Center(
-              child: Image.asset(
-                'assets/images/logo branco.png',
-                fit: BoxFit.contain,
-                width: 260,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
               child: Container(
                 width: double.infinity,
                 margin: const EdgeInsets.only(top: 0),
