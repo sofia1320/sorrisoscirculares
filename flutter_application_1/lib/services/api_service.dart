@@ -130,23 +130,28 @@ class ApiService {
           return false;
         }
         
-        final data = json.decode(response.body);
-        final prefs = await SharedPreferences.getInstance();
-        
-        // Save token with validation
-        if (data['token'] != null && data['token'] is String && (data['token'] as String).isNotEmpty) {
-          await prefs.setString('token', data['token']);
-        } else {
-          print('Error: Invalid or missing token in login response');
+        try {
+          final data = json.decode(response.body);
+          final prefs = await SharedPreferences.getInstance();
+          
+          // Save token with validation
+          if (data['token'] != null && data['token'] is String && (data['token'] as String).isNotEmpty) {
+            await prefs.setString('token', data['token']);
+          } else {
+            print('Error: Invalid or missing token in login response');
+            return false;
+          }
+          
+          // Save user data
+          if (data['user'] != null) {
+            await prefs.setString('user', json.encode(data['user']));
+          }
+          
+          return true;
+        } catch (e) {
+          print('Error parsing login response JSON: $e');
           return false;
         }
-        
-        // Save user data
-        if (data['user'] != null) {
-          await prefs.setString('user', json.encode(data['user']));
-        }
-        
-        return true;
       }
       return false;
     } catch (e) {
