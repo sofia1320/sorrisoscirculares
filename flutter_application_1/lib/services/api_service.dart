@@ -29,7 +29,12 @@ class ApiService {
     final userStr = prefs.getString('user');
     if (userStr != null) {
       try {
-        return json.decode(userStr) as Map<String, dynamic>;
+        final decoded = json.decode(userStr);
+        if (decoded is! Map<String, dynamic>) {
+          print('Stored user data is not a Map');
+          return null;
+        }
+        return decoded;
       } catch (e) {
         print('Error decoding user data: $e');
         return null;
@@ -47,6 +52,9 @@ class ApiService {
 
   // Register User - POST /auth/register
   // On success (201), automatically login to save token and user data
+  // Returns true only if both registration AND automatic login succeed
+  // Note: If login fails after successful registration, returns false
+  // but the user account was created and can login manually
   static Future<bool> registerUser({
     required String nome,
     required String email,
@@ -148,7 +156,12 @@ class ApiService {
         // Parse JSON response with error handling
         Map<String, dynamic> data;
         try {
-          data = json.decode(response.body) as Map<String, dynamic>;
+          final decoded = json.decode(response.body);
+          if (decoded is! Map<String, dynamic>) {
+            print('Response is not a Map');
+            return false;
+          }
+          data = decoded;
         } catch (e) {
           print('Error parsing login response: $e');
           return false;
