@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'donation_history_page.dart';
+import 'services/api_service.dart';
 
 
 class ScheduleDonationPage extends StatefulWidget {
@@ -122,24 +123,52 @@ class _ScheduleDonationPageState extends State<ScheduleDonationPage> {
                         },
                       );
                       if (confirmed == true) {
-                        // Exemplo: criar uma doação e navegar para a página de histórico
-                        final newDonation = Donation(
-                          childName: widget.childName,
-                          dateTime: DateTime(
-                            _focusedMonth.year,
-                            _focusedMonth.month,
-                            _selectedDay ?? 1,
-                            selectedTime?.hour ?? 0,
-                            selectedTime?.minute ?? 0,
-                          ),
-                          status: DonationStatus.pendente,
+                        // Criar doação através da API
+                        final donationDateTime = DateTime(
+                          _focusedMonth.year,
+                          _focusedMonth.month,
+                          _selectedDay ?? 1,
+                          selectedTime?.hour ?? 0,
+                          selectedTime?.minute ?? 0,
                         );
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (_) => DonationHistoryPage(donations: [newDonation]),
+                        
+                        // Mostra loading
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => const Center(
+                            child: CircularProgressIndicator(),
                           ),
-                          (route) => false,
                         );
+                        
+                        final result = await ApiService.createDonation(
+                          childId: widget.childName, // Usando nome como ID temporariamente
+                          dateTime: donationDateTime,
+                        );
+                        
+                        // Remove loading
+                        if (context.mounted) Navigator.of(context).pop();
+                        
+                        if (result != null) {
+                          // Sucesso - navegar para histórico
+                          if (context.mounted) {
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (_) => const DonationHistoryPage(donations: []),
+                              ),
+                              (route) => false,
+                            );
+                          }
+                        } else {
+                          // Erro - mostrar mensagem
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Erro ao criar doação. Por favor, tente novamente.'),
+                              ),
+                            );
+                          }
+                        }
                       }
                     }
                   : null,

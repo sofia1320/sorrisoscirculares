@@ -622,13 +622,7 @@ class _UserBottomNav extends StatelessWidget {
                 // Aqui pode adicionar navegação para o perfil futuramente
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => const UserProfilePage(
-                      name: 'NOME SOBRENOME',
-                      email: 'email utilizador',
-                      password: 'password utilizador',
-                      phone: '999999999',
-                      imagePath: 'assets/images/2.jpg',
-                    ),
+                    builder: (_) => const UserProfilePage(),
                   ),
                 );
               },
