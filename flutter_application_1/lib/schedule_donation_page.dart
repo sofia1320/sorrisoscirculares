@@ -18,8 +18,8 @@ class _ScheduleDonationPageState extends State<ScheduleDonationPage> {
   int? _selectedDay;
   TimeOfDay? selectedTime;
 
-  Future<void> _submitDonation(String childId, String date, String time) async {
-    // Note: Currently passing childName as childId. 
+  Future<void> _submitDonation(String childName, String date, String time) async {
+    // Note: Currently passing childName as childId in API call. 
     // TODO: Update to use actual child ID when child management is implemented
     try {
       final token = await ApiService.getToken();
@@ -38,7 +38,7 @@ class _ScheduleDonationPageState extends State<ScheduleDonationPage> {
           'Authorization': 'Bearer $token',
         },
         body: json.encode({
-          'childId': childId,
+          'childId': childName,  // TODO: Use actual child ID
           'date': date,
           'time': time,
         }),

@@ -41,6 +41,7 @@ class ApiService {
           }
           return true;
         }
+        return false;
       }
       return false;
     } catch (e) {
@@ -122,6 +123,7 @@ class ApiService {
           }
           return true;
         }
+        return false;
       }
       return false;
     } catch (e) {
