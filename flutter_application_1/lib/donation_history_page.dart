@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'user_home_page.dart';
 import 'user_profile_page.dart';
+import 'services/api_service.dart';
 
 class Donation {
   final String childName;
@@ -37,11 +38,52 @@ class DonationHistoryPage extends StatefulWidget {
 
 class _DonationHistoryPageState extends State<DonationHistoryPage> {
   late List<Donation> _donations;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _donations = List<Donation>.from(widget.donations);
+    _loadDonations();
+  }
+  
+  Future<void> _loadDonations() async {
+    setState(() => _isLoading = true);
+    try {
+      final donationsData = await ApiService.getDonations();
+      if (mounted) {
+        setState(() {
+          _donations = donationsData.map((data) {
+            return Donation(
+              childName: data['childId'] ?? 'Desconhecido',
+              dateTime: DateTime.parse(data['dateTime'] ?? DateTime.now().toIso8601String()),
+              status: _parseStatus(data['status']),
+            );
+          }).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading donations: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+  
+  DonationStatus _parseStatus(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'doacao':
+        return DonationStatus.doacao;
+      case 'pendente':
+        return DonationStatus.pendente;
+      case 'confirmar':
+        return DonationStatus.confirmar;
+      case 'sucesso':
+        return DonationStatus.sucesso;
+      default:
+        return DonationStatus.pendente;
+    }
   }
 
   void _removeDonation(Donation donation) {
@@ -76,18 +118,33 @@ class _DonationHistoryPageState extends State<DonationHistoryPage> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 24),
-            ...sorted.map((donation) => DonationCard(
-              donation: donation,
-              onCancel: () => _removeDonation(donation),
-            )),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 24),
+                  if (_donations.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: Text(
+                        'Ainda não tem doações agendadas.',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFFF07167),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  else
+                    ...sorted.map((donation) => DonationCard(
+                      donation: donation,
+                      onCancel: () => _removeDonation(donation),
+                    )),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
       bottomNavigationBar: const _UserBottomNav(),
     );
   }
@@ -138,13 +195,7 @@ class _UserBottomNav extends StatelessWidget {
               onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const UserProfilePage(
-                        name: 'NOME SOBRENOME',
-                        email: 'email utilizador',
-                        password: 'password utilizador',
-                        phone: '999999999',
-                        imagePath: 'assets/images/2.jpg',
-                      ),
+                      builder: (_) => const UserProfilePage(),
                     ),
                   );
                 },

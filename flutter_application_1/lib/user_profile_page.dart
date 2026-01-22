@@ -5,21 +5,22 @@ import 'user_home_page.dart';
 import 'donation_history_page.dart';
 import 'edit_profile_page.dart';
 import 'main.dart';
+import 'services/api_service.dart';
 
 class UserProfilePage extends StatefulWidget {
-  final String name;
-  final String email;
-  final String password;
-  final String phone;
-  final String imagePath;
+  final String? name;
+  final String? email;
+  final String? password;
+  final String? phone;
+  final String? imagePath;
 
   const UserProfilePage({
     super.key,
-    required this.name,
-    required this.email,
-    required this.password,
-    required this.phone,
-    required this.imagePath,
+    this.name,
+    this.email,
+    this.password,
+    this.phone,
+    this.imagePath,
   });
 
   @override
@@ -28,6 +29,12 @@ class UserProfilePage extends StatefulWidget {
 
 class _UserProfilePageState extends State<UserProfilePage> {
   File? _pickedImage;
+  
+  String get _name => widget.name ?? ApiService.userData?['nome'] ?? 'Utilizador';
+  String get _email => widget.email ?? ApiService.userData?['email'] ?? 'email@exemplo.com';
+  String get _password => widget.password ?? '********';
+  String get _phone => widget.phone ?? ApiService.userData?['telemovel'] ?? '999999999';
+  String get _imagePath => widget.imagePath ?? 'assets/images/2.jpg';
 
   Future<void> _pickImage() async {
     showModalBottomSheet(
@@ -110,7 +117,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     radius: 48,
                     backgroundImage: _pickedImage != null
                         ? FileImage(_pickedImage!)
-                        : AssetImage(widget.imagePath) as ImageProvider,
+                        : AssetImage(_imagePath) as ImageProvider,
                     child: Align(
                       alignment: Alignment.bottomRight,
                       child: Container(
@@ -126,7 +133,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ),
               ),
               Text(
-                widget.name,
+                _name,
                 style: const TextStyle(
                   fontFamily: 'WildlySans',
                   fontSize: 24,
@@ -141,9 +148,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   children: [
-                    _ProfileInfoRow(label: 'Email', value: widget.email),
-                    _ProfileInfoRow(label: 'Password', value: widget.password),
-                    _ProfileInfoRow(label: 'Telefone', value: widget.phone),
+                    _ProfileInfoRow(label: 'Email', value: _email),
+                    _ProfileInfoRow(label: 'Password', value: _password),
+                    _ProfileInfoRow(label: 'Telefone', value: _phone),
                   ],
                 ),
               ),
@@ -165,11 +172,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => EditProfilePage(
-                            name: widget.name,
-                            email: widget.email,
-                            password: widget.password,
-                            phone: widget.phone,
-                            imagePath: widget.imagePath,
+                            name: _name,
+                            email: _email,
+                            password: _password,
+                            phone: _phone,
+                            imagePath: _imagePath,
                           ),
                         ),
                       );
@@ -205,6 +212,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                               ),
                               onPressed: () {
                                 Navigator.of(context).pop();
+                                // Fazer logout
+                                ApiService.logout();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Perfil apagado.')),
                                 );
