@@ -800,63 +800,61 @@ class _InstitutionField extends StatelessWidget {
         filled: true,
         fillColor: const Color(0xFFFFFFF4),
         contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-              child: Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(top: 0),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFFFF4),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(48),
-                    topRight: Radius.circular(48),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 32),
-                    const Text(
-                      'Etapa de verificação',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                        fontFamily: 'SF Pro Display',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Enviamos um código de verificação para o seu email.\nPor favor, insira o seu código.',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                        fontFamily: 'SF Pro Display',
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(6, (i) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                        child: _buildCodeBox(i),
-                      )),
-                    ),
-                    const SizedBox(height: 32),
-                    _InstitutionButton(
-                      text: 'VERIFICAR',
-                      onTap: () {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => const AdminHomePage()),
-                          (route) => false,
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(32),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(32),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        ),
+      ),
+      style: const TextStyle(
+        fontSize: 18,
+        fontFamily: 'SF Pro Display',
+      ),
+    );
+  }
+}
+
+class _InstitutionButton extends StatelessWidget {
+  final String text;
+  final VoidCallback onTap;
+  const _InstitutionButton({required this.text, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 300,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        margin: const EdgeInsets.only(top: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(40),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFF07167), Color(0xFFF3B9A9)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
           ],
+        ),
+        child: Center(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: 2,
+            ),
+          ),
         ),
       ),
     );

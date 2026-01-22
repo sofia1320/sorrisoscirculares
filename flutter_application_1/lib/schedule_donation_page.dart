@@ -19,6 +19,8 @@ class _ScheduleDonationPageState extends State<ScheduleDonationPage> {
   TimeOfDay? selectedTime;
 
   Future<void> _submitDonation(String childId, String date, String time) async {
+    // Note: Currently passing childName as childId. 
+    // TODO: Update to use actual child ID when child management is implemented
     try {
       final token = await ApiService.getToken();
       if (token == null) {
