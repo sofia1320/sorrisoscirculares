@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'donation_history_page.dart';
+import 'services/api_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 
 class ScheduleDonationPage extends StatefulWidget {
@@ -14,6 +17,60 @@ class _ScheduleDonationPageState extends State<ScheduleDonationPage> {
   DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   int? _selectedDay;
   TimeOfDay? selectedTime;
+
+  Future<void> _submitDonation(String childName, String date, String time) async {
+    // Note: Currently passing childName as childId in API call. 
+    // TODO: Update to use actual child ID when child management is implemented
+    try {
+      final token = await ApiService.getToken();
+      if (token == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erro: Token de autenticação não encontrado.')),
+        );
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/donations'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'childId': childName,  // TODO: Use actual child ID
+          'date': date,
+          'time': time,
+        }),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Doação agendada com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao agendar doação: ${response.statusCode}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao agendar doação: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,7 +179,14 @@ class _ScheduleDonationPageState extends State<ScheduleDonationPage> {
                         },
                       );
                       if (confirmed == true) {
-                        // Exemplo: criar uma doação e navegar para a página de histórico
+                        // Format date and time for API
+                        final dateStr = '${_focusedMonth.year}-${_focusedMonth.month.toString().padLeft(2, '0')}-${_selectedDay.toString().padLeft(2, '0')}';
+                        final timeStr = '${selectedTime?.hour.toString().padLeft(2, '0')}:${selectedTime?.minute.toString().padLeft(2, '0')}';
+                        
+                        // Submit donation to API
+                        await _submitDonation(widget.childName, dateStr, timeStr);
+                        
+                        // Create local donation and navigate
                         final newDonation = Donation(
                           childName: widget.childName,
                           dateTime: DateTime(
