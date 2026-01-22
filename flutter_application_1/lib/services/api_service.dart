@@ -12,6 +12,8 @@ class ApiService {
 
   // Register user - POST /auth/register
   // On 201, automatically calls loginUser to save token and user
+  // Note: If the backend returns token directly in registration response,
+  // this could be optimized to avoid passing password twice
   static Future<bool> registerUser({
     required String nome,
     required String email,
@@ -31,7 +33,25 @@ class ApiService {
       );
       
       if (response.statusCode == 201) {
-        // Auto-login after successful registration
+        // Check if registration response includes a token directly
+        if (response.body.isNotEmpty) {
+          try {
+            final data = json.decode(response.body);
+            if (data['token'] != null && data['token'] is String && (data['token'] as String).isNotEmpty) {
+              // Token returned directly, save it and skip login call
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('token', data['token']);
+              if (data['user'] != null) {
+                await prefs.setString('user', json.encode(data['user']));
+              }
+              return true;
+            }
+          } catch (e) {
+            print('Error parsing registration response: $e');
+          }
+        }
+        
+        // Auto-login after successful registration (fallback behavior)
         return await loginUser(email: email, password: password);
       }
       return false;
@@ -104,12 +124,21 @@ class ApiService {
       );
       
       if (response.statusCode == 200) {
+        // Validate response body before decoding
+        if (response.body.isEmpty) {
+          print('Error: Empty response body from login');
+          return false;
+        }
+        
         final data = json.decode(response.body);
         final prefs = await SharedPreferences.getInstance();
         
-        // Save token
-        if (data['token'] != null) {
+        // Save token with validation
+        if (data['token'] != null && data['token'] is String && (data['token'] as String).isNotEmpty) {
           await prefs.setString('token', data['token']);
+        } else {
+          print('Error: Invalid or missing token in login response');
+          return false;
         }
         
         // Save user data
