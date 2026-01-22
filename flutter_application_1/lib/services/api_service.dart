@@ -67,7 +67,13 @@ class ApiService {
 
       if (response.statusCode == 201) {
         // Registration successful, now login to get token
-        return await loginUser(email: email, password: password);
+        // Note: If login fails, the registration still succeeded on the backend
+        // The user can try logging in separately
+        final loginSuccess = await loginUser(email: email, password: password);
+        if (!loginSuccess) {
+          print('Registration succeeded but automatic login failed');
+        }
+        return loginSuccess;
       }
       return false;
     } catch (e) {
@@ -139,7 +145,14 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
+        // Parse JSON response with error handling
+        Map<String, dynamic> data;
+        try {
+          data = json.decode(response.body) as Map<String, dynamic>;
+        } catch (e) {
+          print('Error parsing login response: $e');
+          return false;
+        }
         
         // Validate response structure
         if (!data.containsKey('token') || !data.containsKey('user')) {
@@ -147,15 +160,21 @@ class ApiService {
           return false;
         }
         
-        final token = data['token'] as String?;
-        final user = data['user'] as Map<String, dynamic>?;
-        
-        if (token == null || user == null) {
-          print('Invalid response: token or user is null');
+        // Safely extract and validate token
+        final tokenValue = data['token'];
+        if (tokenValue == null || tokenValue is! String) {
+          print('Invalid token in response');
           return false;
         }
         
-        await _saveAuthData(token, user);
+        // Safely extract and validate user
+        final userValue = data['user'];
+        if (userValue == null || userValue is! Map<String, dynamic>) {
+          print('Invalid user data in response');
+          return false;
+        }
+        
+        await _saveAuthData(tokenValue, userValue);
         return true;
       }
       return false;
