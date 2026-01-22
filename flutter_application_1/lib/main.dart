@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'user_home_page.dart';
+import 'admin_home_page.dart';
+import 'services/api_service.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -219,6 +221,39 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+    bool isLoading = false;
+
+    Future<void> login() async {
+      // Mostra loading
+      isLoading = true;
+      try {
+        final success = await ApiService.loginUser(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim(),
+        );
+        if (success) {
+          // ignore: use_build_context_synchronously
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const UserHomePage()),
+          );
+        } else {
+          // ignore: use_build_context_synchronously
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Email ou password inválidos.')),
+          );
+        }
+      } catch (e) {
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro: $e')),
+        );
+      } finally {
+        isLoading = false;
+      }
+    }
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
@@ -274,18 +309,49 @@ class LoginPage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 32.0),
                       child: Column(
                         children: [
-                          _LoginField(hint: 'Email'),
+                          TextField(
+                            controller: emailController,
+                            decoration: const InputDecoration(
+                              hintText: 'Email',
+                              filled: true,
+                              fillColor: Color(0xFFFFFFF4),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(32)),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontFamily: 'SF Pro Display',
+                            ),
+                          ),
                           const SizedBox(height: 24),
-                          _LoginField(hint: 'Password', obscure: true),
+                          TextField(
+                            controller: passwordController,
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              hintText: 'Password',
+                              filled: true,
+                              fillColor: Color(0xFFFFFFF4),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(32)),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontFamily: 'SF Pro Display',
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 32),
                     _LoginButton(
-                      text: 'LOGIN',
-                      onTap: () {
-                        // ação de login
-                      },
+                      text: isLoading ? 'A ENTRAR...' : 'LOGIN',
+                      onTap: isLoading ? null : () { login(); },
                     ),
                   ],
                 ),
@@ -298,36 +364,10 @@ class LoginPage extends StatelessWidget {
   }
 }
 
-class _LoginField extends StatelessWidget {
-  final String hint;
-  final bool obscure;
-  const _LoginField({required this.hint, this.obscure = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      obscureText: obscure,
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: const Color(0xFFFFFFF4),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(32),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      style: const TextStyle(
-        fontSize: 18,
-        fontFamily: 'SF Pro Display',
-      ),
-    );
-  }
-}
 
 class _LoginButton extends StatelessWidget {
   final String text;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   const _LoginButton({required this.text, required this.onTap});
 
   @override
@@ -369,8 +409,59 @@ class _LoginButton extends StatelessWidget {
   }
 }
 
-class RegisterUserPage extends StatelessWidget {
+//registro utilizador
+class RegisterUserPage extends StatefulWidget {
   const RegisterUserPage({super.key});
+
+  @override
+  State<RegisterUserPage> createState() => _RegisterUserPageState();
+}
+
+class _RegisterUserPageState extends State<RegisterUserPage> {
+  final _nomeController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _telemovelController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _telemovelController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _register() async {
+    setState(() => _isLoading = true);
+    try {
+      final success = await ApiService.registerUser(
+        nome: _nomeController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        telemovel: _telemovelController.text.trim(),
+      );
+      if (success) {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const UserHomePage()),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erro ao registar. Tente novamente.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -430,24 +521,20 @@ class RegisterUserPage extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 32.0),
                         child: Column(
                           children: [
-                            _RegisterField(hint: 'Nome'),
+                            _RegisterField(hint: 'Nome', controller: _nomeController),
                             const SizedBox(height: 24),
-                            _RegisterField(hint: 'Email'),
+                            _RegisterField(hint: 'Email', controller: _emailController),
                             const SizedBox(height: 24),
-                            _RegisterField(hint: 'Password', obscure: true),
+                            _RegisterField(hint: 'Password', obscure: true, controller: _passwordController),
                             const SizedBox(height: 24),
-                            _RegisterField(hint: 'Telefone'),
+                            _RegisterField(hint: 'Telefone', controller: _telemovelController),
                           ],
                         ),
                       ),
                       const SizedBox(height: 32),
                       _RegisterButton(
-                        text: 'REGISTAR',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const UserHomePage()),
-                          );
-                        },
+                        text: _isLoading ? 'A REGISTAR...' : 'REGISTAR',
+                        onTap: _isLoading ? null : () { _register(); },
                       ),
                       const SizedBox(height: 32),
                     ],
@@ -465,11 +552,13 @@ class RegisterUserPage extends StatelessWidget {
 class _RegisterField extends StatelessWidget {
   final String hint;
   final bool obscure;
-  const _RegisterField({required this.hint, this.obscure = false});
+  final TextEditingController? controller;
+  const _RegisterField({required this.hint, this.obscure = false, this.controller});
 
   @override
   Widget build(BuildContext context) {
     return TextField(
+      controller: controller,
       obscureText: obscure,
       decoration: InputDecoration(
         hintText: hint,
@@ -491,7 +580,7 @@ class _RegisterField extends StatelessWidget {
 
 class _RegisterButton extends StatelessWidget {
   final String text;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   const _RegisterButton({required this.text, required this.onTap});
 
   @override
@@ -831,7 +920,10 @@ class _InstitutionVerificationPageState extends State<InstitutionVerificationPag
                     _InstitutionButton(
                       text: 'VERIFICAR',
                       onTap: () {
-                        // ação de verificação
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => const AdminHomePage()),
+                          (route) => false,
+                        );
                       },
                     ),
                     const SizedBox(height: 32),
