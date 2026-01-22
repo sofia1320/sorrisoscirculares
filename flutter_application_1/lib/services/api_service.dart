@@ -28,7 +28,12 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     final userStr = prefs.getString('user');
     if (userStr != null) {
-      return json.decode(userStr) as Map<String, dynamic>;
+      try {
+        return json.decode(userStr) as Map<String, dynamic>;
+      } catch (e) {
+        print('Error decoding user data: $e');
+        return null;
+      }
     }
     return null;
   }
@@ -135,8 +140,20 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
-        final token = data['token'] as String;
-        final user = data['user'] as Map<String, dynamic>;
+        
+        // Validate response structure
+        if (!data.containsKey('token') || !data.containsKey('user')) {
+          print('Invalid response structure: missing token or user');
+          return false;
+        }
+        
+        final token = data['token'] as String?;
+        final user = data['user'] as Map<String, dynamic>?;
+        
+        if (token == null || user == null) {
+          print('Invalid response: token or user is null');
+          return false;
+        }
         
         await _saveAuthData(token, user);
         return true;
